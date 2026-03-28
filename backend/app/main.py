@@ -15,7 +15,7 @@ from app.core.vector_store import VectorStore
 from app.services.face_service import FaceService
 from app.services.object_service import ObjectService
 from app.services.recognition_service import RecognitionService
-from app.services.agent_service import AgentService
+from app.services.room_service import RoomService
 from app.services.voice_service import VoiceService
 
 logging.basicConfig(
@@ -54,13 +54,13 @@ async def lifespan(app_instance: FastAPI):
     voice_service = VoiceService(settings)
     state.voice_service = voice_service
 
-    # Agent service (Fishjam + Gemini Live, lazy-loaded)
+    # Room service (Fishjam volunteer calls)
     if settings.fishjam_id and settings.fishjam_management_token:
-        agent_service = AgentService(settings)
-        state.agent_service = agent_service
-        logger.info("Fishjam agent service ready")
+        room_service = RoomService(settings)
+        state.room_service = room_service
+        logger.info("Fishjam room service ready")
     else:
-        logger.warning("Fishjam credentials not set — agent service disabled")
+        logger.warning("Fishjam credentials not set — room service disabled")
 
     logger.info("RemindMe backend ready")
     yield

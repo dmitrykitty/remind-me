@@ -2,15 +2,13 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
 import app.state as state
-from app.core.database import get_session
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/agent", tags=["agent"])
+router = APIRouter(prefix="/api/room", tags=["room"])
 
 
 class StartHelpResponse(BaseModel):
@@ -19,29 +17,61 @@ class StartHelpResponse(BaseModel):
     peer_id: str
 
 
-class StopHelpRequest(BaseModel):
+class RoomIdRequest(BaseModel):
     room_id: str
 
 
-@router.post("/start-help", response_model=StartHelpResponse)
-async def start_help(db: Session = Depends(get_session)):
-    """Create a Fishjam room with an AI voice agent and return a peer token."""
-    if not state.agent_service:
-        raise HTTPException(503, "Agent service not configured")
+class WaitingRoom(BaseModel):
+    room_id: str
+    waiting_seconds: int
+
+
+@router.post("/create", response_model=StartHelpResponse)
+async def create_help_room():
+    """User clicks SOS → create a Fishjam room and return their peer token."""
+    if not state.room_service:
+        raise HTTPException(503, "Room service not configured (Fishjam credentials missing)")
     try:
-        result = await state.agent_service.start_help_session(db)
-        return result
+        room = await state.room_service.create_help_room()
+        return {
+            "room_id": room.room_id,
+            "peer_token": room.user_peer_token,
+            "peer_id": room.user_peer_id,
+        }
     except Exception as exc:
-        logger.error("Failed to start help session: %s", exc, exc_info=True)
-        raise HTTPException(500, f"Could not start help session: {exc}")
+        logger.error("Failed to create help room: %s", exc, exc_info=True)
+        raise HTTPException(500, f"Could not create room: {exc}")
 
 
-@router.post("/stop-help")
-async def stop_help(body: StopHelpRequest):
-    """Stop an active help session."""
-    if not state.agent_service:
-        raise HTTPException(503, "Agent service not configured")
-    stopped = await state.agent_service.stop_help_session(body.room_id)
-    if not stopped:
-        raise HTTPException(404, "No active session for this room")
-    return {"status": "stopped"}
+@router.get("/waiting", response_model=list[WaitingRoom])
+async def list_waiting_rooms():
+    """Volunteer panel polls this to see rooms waiting for help."""
+    if not state.room_service:
+        raise HTTPException(503, "Room service not configured")
+    return state.room_service.list_waiting_rooms()
+
+
+@router.post("/join", response_model=StartHelpResponse)
+async def volunteer_join(body: RoomIdRequest):
+    """Volunteer joins an existing room."""
+    if not state.room_service:
+        raise HTTPException(503, "Room service not configured")
+    try:
+        result = await state.room_service.volunteer_join(body.room_id)
+        return result
+    except ValueError as exc:
+        raise HTTPException(404, str(exc))
+    except Exception as exc:
+        logger.error("Failed to join room: %s", exc, exc_info=True)
+        raise HTTPException(500, f"Could not join room: {exc}")
+
+
+@router.post("/close")
+async def close_room(body: RoomIdRequest):
+    """Either party ends the call."""
+    if not state.room_service:
+        raise HTTPException(503, "Room service not configured")
+    closed = await state.room_service.close_room(body.room_id)
+    if not closed:
+        raise HTTPException(404, "Room not found")
+    return {"status": "closed"}

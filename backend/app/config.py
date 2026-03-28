@@ -44,7 +44,10 @@ class Settings(BaseSettings):
     fishjam_id: str = ""
     fishjam_management_token: str = ""
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {
+        "env_file": str(_BASE_DIR / ".env"),
+        "env_file_encoding": "utf-8",
+    }
 
 
 @lru_cache

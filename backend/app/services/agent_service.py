@@ -105,13 +105,17 @@ class AgentService:
             from google import genai
 
             settings = self.settings
+            # Jeśli skonfigurowano projekt, używamy ścieżki Vertex AI
             if settings.google_cloud_project:
                 self._genai = genai.Client(
                     vertexai=True,
                     project=settings.google_cloud_project,
                     location=settings.google_cloud_location,
+                    # KLUCZOWA POPRAWKA: Przekazujemy klucz API do Vertex AI
+                    api_key=settings.vertex_api_key  
                 )
             elif settings.gemini_api_key:
+                # Ścieżka dla standardowego Google AI Studio (klucze AIza...)
                 self._genai = genai.Client(api_key=settings.gemini_api_key)
             else:
                 raise RuntimeError("No Gemini API credentials configured")
@@ -184,7 +188,8 @@ class AgentService:
 
             # Connect to Gemini Live
             session = await genai.aio.live.connect(
-                model="gemini-2.5-flash-native-audio-preview-12-2025",
+                # Dla Vertex AI często wystarczy krótki identyfikator modelu
+                model="gemini-2.0-flash-exp", 
                 config=types.LiveConnectConfig(
                     system_instruction=system_prompt,
                     response_modalities=["AUDIO"],
