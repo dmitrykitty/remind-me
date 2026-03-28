@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+.eggs/
+
+# Backend data
+backend/data/remindme.db
+backend/data/chroma/
+backend/data/media/
+
+# Node
+node_modules/
+dist/
+
+# Env
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

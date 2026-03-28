@@ -1,0 +1,29 @@
+[project]
+name = "remindme-backend"
+version = "0.1.0"
+description = "RemindMe — AR Memory Assistant Backend"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "python-multipart>=0.0.12",
+    "sqlalchemy>=2.0.0",
+    "deepface>=0.0.93",
+    "chromadb>=0.5.0",
+    "sentence-transformers>=3.0.0",
+    "pillow>=10.0.0",
+    "numpy>=1.26.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "opencv-python-headless>=4.9.0",
+    "tf-keras>=2.21.0",
+    "google-genai>=1.0.0",
+    "fishjam-server-sdk>=0.25.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
