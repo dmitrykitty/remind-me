@@ -63,6 +63,13 @@ Supported commands:
   Example voice: "To są moje klucze od domu"
   -> {"intent": "add_object", "name": "klucze", "category": "personal", "notes": "klucze od domu"}
 
+- add_task: Add a short task / reminder
+  Parameters: title (string), due_at (string, optional — ISO datetime if mentioned)
+  Example voice: "Przypomnij mi żebym wypił leki o 18"
+  -> {"intent": "add_task", "title": "Wypij leki", "due_at": null}
+  Example voice: "Muszę zadzwonić do lekarza"
+  -> {"intent": "add_task", "title": "Zadzwoń do lekarza", "due_at": null}
+
 - unknown: If the command doesn't match any supported intent
   -> {"intent": "unknown", "transcript": "...the transcribed text..."}
 
@@ -145,16 +152,31 @@ class VoiceService:
 
         # Execute command
         if intent == "add_person":
-            return await self._execute_add_person(command, frame_bytes, db)
+            result = await self._execute_add_person(command, frame_bytes, db)
         elif intent == "add_object":
-            return await self._execute_add_object(command, frame_bytes, db)
+            result = await self._execute_add_object(command, frame_bytes, db)
+        elif intent == "add_task":
+            result = await self._execute_add_task(command, db)
         else:
-            return {
+            result = {
                 "success": True,
                 "intent": "unknown",
                 "transcript": command.get("transcript", raw_text),
                 "message": "Command not recognized",
             }
+
+        # Log voice command to history
+        from app.models.tables import HistoryEntry
+        transcript_text = command.get("transcript", raw_text)
+        entry = HistoryEntry(
+            kind="voice_command",
+            title=result.get("message", f"Voice: {intent}"),
+            transcript=transcript_text,
+        )
+        db.add(entry)
+        db.commit()
+
+        return result
 
     async def _execute_add_person(
         self, command: dict, frame_bytes: bytes | None, db: Session
@@ -257,4 +279,33 @@ class VoiceService:
             "notes": notes,
             "appearance_enrolled": enrolled_appearance,
             "message": f"Added {name}" + (" with photo" if enrolled_appearance else " (no photo)"),
+        }
+
+    async def _execute_add_task(
+        self, command: dict, db: Session
+    ) -> dict[str, Any]:
+        """Create a task/reminder from a voice command."""
+        from datetime import datetime
+        from app.models.tables import Task
+
+        title = command.get("title", "Reminder")
+        due_at_str = command.get("due_at")
+
+        due_at = None
+        if due_at_str:
+            try:
+                due_at = datetime.fromisoformat(due_at_str)
+            except (ValueError, TypeError):
+                pass
+
+        task = Task(title=title, due_at=due_at)
+        db.add(task)
+        db.flush()
+
+        return {
+            "success": True,
+            "intent": "add_task",
+            "task_id": task.id,
+            "title": title,
+            "message": f"Task added: {title}",
         }

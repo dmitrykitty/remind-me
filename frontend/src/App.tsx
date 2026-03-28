@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 
 import CameraView from "./components/CameraView";
@@ -14,7 +14,10 @@ import SettingsPanel from "./components/SettingsPanel";
 import MemoryPanel from "./components/MemoryPanel";
 import EnrollPersonModal from "./components/EnrollPersonModal";
 import EnrollObjectModal from "./components/EnrollObjectModal";
+import TranscriptPanel from "./components/TranscriptPanel";
+import type { TranscriptMessage } from "./components/TranscriptPanel";
 import type { UnknownFace } from "./api/types";
+import { createHistory } from "./api/client";
 
 import { useCamera } from "./hooks/useCamera";
 import { useRecognition } from "./hooks/useRecognition";
@@ -30,8 +33,19 @@ export default function App() {
   const [quickEnrollFace, setQuickEnrollFace] = useState<UnknownFace | null>(null);
   const [memoryVersion, setMemoryVersion] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [transcriptMessages, setTranscriptMessages] = useState<TranscriptMessage[]>([]);
 
   const bumpMemory = useCallback(() => setMemoryVersion((v) => v + 1), []);
+
+  const addTranscriptMsg = useCallback(
+    (role: TranscriptMessage["role"], text: string) => {
+      setTranscriptMessages((prev) => [
+        ...prev,
+        { id: `${Date.now()}-${Math.random()}`, role, text, timestamp: Date.now() },
+      ]);
+    },
+    [],
+  );
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -53,17 +67,52 @@ export default function App() {
     if (isRecording) {
       stopRecording();
     } else {
+      // Clear transcript when starting a new recording session
+      setTranscriptMessages([]);
       startRecording();
     }
   }, [isRecording, startRecording, stopRecording]);
 
-  // Bump memory when voice command adds a person/object
+  // Push voice command results into transcript
+  useEffect(() => {
+    if (!lastResult) return;
+    if (lastResult.transcript) {
+      addTranscriptMsg("user", lastResult.transcript);
+    }
+    if (lastResult.message) {
+      addTranscriptMsg("system", lastResult.message);
+    } else if (lastResult.error) {
+      addTranscriptMsg("system", `Błąd: ${lastResult.error}`);
+    }
+  }, [lastResult, addTranscriptMsg]);
+
+  // Bump memory when voice command adds a person/object/task
   const handleDismissVoice = useCallback(() => {
-    if (lastResult?.success && (lastResult.intent === "add_person" || lastResult.intent === "add_object")) {
+    if (lastResult?.success && (lastResult.intent === "add_person" || lastResult.intent === "add_object" || lastResult.intent === "add_task")) {
       bumpMemory();
     }
     clearResult();
   }, [lastResult, bumpMemory, clearResult]);
+
+  // Save volunteer call to history when it ends
+  const handleCallEnded = useCallback(
+    async (durationSecs: number) => {
+      const mins = Math.floor(durationSecs / 60);
+      const secs = durationSecs % 60;
+      const dur = mins > 0 ? `${mins}min ${secs}s` : `${secs}s`;
+      try {
+        await createHistory({
+          kind: "volunteer_call",
+          title: `Rozmowa z wolontariuszem (${dur})`,
+          summary: `Połączenie z wolontariuszem trwało ${dur}.`,
+        });
+      } catch {
+        /* best effort */
+      }
+      bumpMemory();
+    },
+    [bumpMemory],
+  );
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black select-none">
@@ -123,10 +172,19 @@ export default function App() {
       <button
         onClick={() => setHelpOpen(true)}
         className="absolute bottom-28 right-6 z-30 w-16 h-16 rounded-full bg-red-500/90 text-white text-2xl font-bold flex items-center justify-center shadow-lg active:scale-95 transition-transform border-2 border-red-300/40"
-        aria-label="Wezwij pomoc AI"
+        aria-label="Wezwij wolontariusza"
       >
         SOS
       </button>
+
+      {/* Transcript panel (right side) */}
+      <TranscriptPanel
+        visible={isRecording || isProcessing || helpOpen}
+        messages={transcriptMessages}
+        isRecording={isRecording}
+        isProcessing={isProcessing}
+        isVolunteerCall={helpOpen}
+      />
 
       {/* Voice command feedback */}
       <VoiceCommandToast
@@ -193,7 +251,7 @@ export default function App() {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {helpOpen && <HelpRoom onClose={() => setHelpOpen(false)} />}
+        {helpOpen && <HelpRoom onClose={() => setHelpOpen(false)} onCallEnded={handleCallEnded} />}
       </AnimatePresence>
     </div>
   );

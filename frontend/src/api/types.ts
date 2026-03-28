@@ -83,3 +83,25 @@ export interface AppSettings {
   face_recognition_enabled: boolean;
   object_recognition_enabled: boolean;
 }
+
+// ---- Tasks ----
+
+export interface Task {
+  id: string;
+  title: string;
+  done: boolean;
+  due_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ---- History ----
+
+export interface HistoryEntry {
+  id: string;
+  kind: string;
+  title: string;
+  summary: string;
+  transcript: string;
+  created_at: string;
+}

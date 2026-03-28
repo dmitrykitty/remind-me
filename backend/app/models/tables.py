@@ -105,3 +105,39 @@ class AppSettings(Base):
     frame_interval_ms: Mapped[int] = mapped_column(Integer, default=1500)
     face_recognition_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     object_recognition_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+# ---------------------------------------------------------------------------
+# Tasks (short reminders like "take medicine")
+# ---------------------------------------------------------------------------
+
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    done: Mapped[bool] = mapped_column(Boolean, default=False)
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, onupdate=_now
+    )
+
+
+# ---------------------------------------------------------------------------
+# History log (activity + conversation summaries)
+# ---------------------------------------------------------------------------
+
+
+class HistoryEntry(Base):
+    __tablename__ = "history"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    kind: Mapped[str] = mapped_column(String(50), nullable=False)
+    # kind values: "voice_command", "volunteer_call", "person_added",
+    #              "object_added", "task_added", "task_done", etc.
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    transcript: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

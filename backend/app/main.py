@@ -86,7 +86,7 @@ def create_app() -> FastAPI:
     )
 
     # Routes
-    from app.api.routes import agent, health, memory, objects, people, recognition, voice
+    from app.api.routes import agent, health, history, memory, objects, people, recognition, tasks, voice
     from app.api.routes import settings as settings_routes
 
     app_instance.include_router(health.router)
@@ -97,6 +97,8 @@ def create_app() -> FastAPI:
     app_instance.include_router(recognition.router)
     app_instance.include_router(voice.router)
     app_instance.include_router(agent.router)
+    app_instance.include_router(tasks.router)
+    app_instance.include_router(history.router)
 
     # Static media serving
     media_path = Path(settings.media_dir)

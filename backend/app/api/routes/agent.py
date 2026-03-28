@@ -32,7 +32,7 @@ async def create_help_room():
     if not state.room_service:
         raise HTTPException(503, "Room service not configured (Fishjam credentials missing)")
     try:
-        room = await state.room_service.create_help_room()
+        room = state.room_service.create_help_room()
         return {
             "room_id": room.room_id,
             "peer_token": room.user_peer_token,
@@ -57,7 +57,7 @@ async def volunteer_join(body: RoomIdRequest):
     if not state.room_service:
         raise HTTPException(503, "Room service not configured")
     try:
-        result = await state.room_service.volunteer_join(body.room_id)
+        result = state.room_service.volunteer_join(body.room_id)
         return result
     except ValueError as exc:
         raise HTTPException(404, str(exc))
@@ -71,7 +71,7 @@ async def close_room(body: RoomIdRequest):
     """Either party ends the call."""
     if not state.room_service:
         raise HTTPException(503, "Room service not configured")
-    closed = await state.room_service.close_room(body.room_id)
+    closed = state.room_service.close_room(body.room_id)
     if not closed:
         raise HTTPException(404, "Room not found")
     return {"status": "closed"}

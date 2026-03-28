@@ -1,4 +1,11 @@
 cd D:\projects\hackatons\sm_gemini_2026\remindme\frontend
 npx vite --host
 
-cd D:\projects\hackatons\sm_gemini_2026\remindme\backend; uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
+cd d:\projects\hackatons\sm_gemini_2026\remindme\backend; uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
+
+
+
+I have few next tasks for you. also to memory and objects we need to add mozliwosc dodawania tascs, np krotkich taksow typu wypij leki czy cos takiego. i tez trzeba, zeby ta mozliwosc byla zarowna jak glosowa podcvzas naciskania mikrofonu, tak i przez ui. tez chcialbym, zebys dodal okenko transkipty wszystkich polecen kiedy jest uruchamiany mikrofon po prawej stronie. bedzie sie popjawialo tylko kiedy uruchumiony mikrofon lub jest dialog z volontariushem. wazne, zeby cala rozmowala byla zapisywana takie krotkie wiadomosci w okienmku dialogowym, apozniej bylo robione summary i zapisywane do history audio sessions czy cos takiego. czyli trzeba caly dialog prowadzony skracac, robic z niego summary i zapisywac w history, zeby mozna bylo podlgadnanc np co poradzil doktor. Lub, jezeli np dodajemy jakas osobe do znajomych - trzeba zrobic krotka wiadomosc do history - added ...Trzeba tez dodac docker container wraz z goolge cloud aby udalo sie latwo uruchamiac aplikacje 
+
+
+kolejny task - jak zrobic szybki deploy, zebym mogl przetestowac na dwoch roznych urzadzeniach? 

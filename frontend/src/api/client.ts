@@ -1,4 +1,4 @@
-import type { AppSettings, KnownObject, Person } from "./types";
+import type { AppSettings, KnownObject, Person, Task, HistoryEntry } from "./types";
 
 const BASE = "";
 
@@ -111,4 +111,70 @@ export async function updateSettings(
 export async function resetMemory(): Promise<void> {
   const res = await fetch(`${BASE}/api/memory/reset`, { method: "POST" });
   if (!res.ok) throw new Error(`Reset failed: ${res.status}`);
+}
+
+// ---- Tasks ----
+
+export async function listTasks(): Promise<Task[]> {
+  return json(await fetch(`${BASE}/api/tasks`));
+}
+
+export async function createTask(data: { title: string; due_at?: string }): Promise<Task> {
+  return json(
+    await fetch(`${BASE}/api/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+  );
+}
+
+export async function updateTask(
+  id: string,
+  data: { title?: string; done?: boolean; due_at?: string },
+): Promise<Task> {
+  return json(
+    await fetch(`${BASE}/api/tasks/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+  );
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/api/tasks/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+}
+
+// ---- History ----
+
+export async function listHistory(limit = 50): Promise<HistoryEntry[]> {
+  return json(await fetch(`${BASE}/api/history?limit=${limit}`));
+}
+
+export async function createHistory(data: {
+  kind: string;
+  title: string;
+  summary?: string;
+  transcript?: string;
+}): Promise<HistoryEntry> {
+  return json(
+    await fetch(`${BASE}/api/history`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+  );
+}
+
+export async function summarizeTranscript(transcript: string): Promise<string> {
+  const res = await fetch(`${BASE}/api/history/summarize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transcript }),
+  });
+  if (!res.ok) throw new Error(`Summarize failed: ${res.status}`);
+  const data = await res.json();
+  return data.summary;
 }

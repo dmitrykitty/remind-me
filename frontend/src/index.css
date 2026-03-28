@@ -7,6 +7,11 @@
   @apply backdrop-blur-xl bg-black/30 border border-white/10;
 }
 
+/* Mirror self-view camera */
+.mirror {
+  transform: scaleX(-1);
+}
+
 /* Hide scrollbar but allow scrolling */
 .hide-scrollbar {
   -ms-overflow-style: none;
